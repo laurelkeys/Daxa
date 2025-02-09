@@ -3050,7 +3050,7 @@ namespace daxa
                 usize task_index = 0;
                 for (TaskId const task_id : task_batch.tasks)
                 {
-                    impl.execute_task(impl_runtime, permutation, batch_index, task_index, task_id);
+                    impl.execute_task(impl_runtime, permutation, static_cast<u32>(batch_index), task_index, task_id);
                     task_index += 1;
                 }
                 if (impl.info.use_split_barriers)

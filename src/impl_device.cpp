@@ -85,6 +85,7 @@ auto daxa_ImplDevice::ImplQueue::initialize(VkDevice vk_device, u32 queue_family
         .flags = {},
     };
 
+    this->vk_queue_index = queue_index;
     this->vk_queue_family_index = queue_family_index;
     vkGetDeviceQueue(vk_device, queue_family_index, queue_index, &this->vk_queue);
     daxa_Result result = DAXA_RESULT_SUCCESS;
@@ -1518,12 +1519,12 @@ auto daxa_ImplDevice::create_2(daxa_Instance instance, daxa_DeviceInfo2 const & 
     };
     for (u32 i = 0; i < self->queues.size(); ++i)
     {
-        if (self->queues[i].queue_index >= self->queue_families[self->queues[i].family].queue_count)
+        if (self->queues[i].vk_queue_index >= self->queue_families[self->queues[i].family].queue_count)
         {
             continue;
         }
         auto const vk_queue_family = self->queue_families[self->queues[i].family].vk_index;
-        result = self->queues[i].initialize(self->vk_device, vk_queue_family, self->queues[i].queue_index);
+        result = self->queues[i].initialize(self->vk_device, vk_queue_family, self->queues[i].vk_queue_index);
         _DAXA_RETURN_IF_ERROR(result, result)
     }
 

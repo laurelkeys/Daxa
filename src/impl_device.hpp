@@ -112,7 +112,7 @@ struct daxa_ImplDevice final : public ImplHandle
     {
         // Constant after initialization:
         daxa_QueueFamily family = {};
-        u32 queue_index = {};
+        u32 vk_queue_index = {};
         u32 vk_queue_family_index = ~0u;
         VkQueue vk_queue = {};
         VkSemaphore gpu_queue_local_timeline = {};
