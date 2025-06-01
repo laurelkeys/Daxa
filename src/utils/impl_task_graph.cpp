@@ -3,7 +3,6 @@
 #include "../impl_core.hpp"
 
 #include <algorithm>
-#include <iostream>
 #include <set>
 
 #include <utility>
@@ -160,7 +159,7 @@ namespace daxa
     auto TaskInterface::get(TaskBufferView view) const -> TaskBufferAttachmentInfo const &
     {
         auto iter = std::find_if(attachment_infos.begin(), attachment_infos.end(), [&](auto const & other)
-                                 { 
+                                 {
             if (other.type == TaskAttachmentType::BUFFER)
             {
                 return other.value.buffer.view == view || other.value.buffer.translated_view == view;
@@ -179,7 +178,7 @@ namespace daxa
     auto TaskInterface::get(TaskBlasView view) const -> TaskBlasAttachmentInfo const &
     {
         auto iter = std::find_if(attachment_infos.begin(), attachment_infos.end(), [&](auto const & other)
-                                 { 
+                                 {
             if (other.type == TaskAttachmentType::BLAS)
             {
                 return other.value.blas.view == view || other.value.blas.translated_view == view;
@@ -198,7 +197,7 @@ namespace daxa
     auto TaskInterface::get(TaskTlasView view) const -> TaskTlasAttachmentInfo const &
     {
         auto iter = std::find_if(attachment_infos.begin(), attachment_infos.end(), [&](auto const & other)
-                                 { 
+                                 {
             if (other.type == TaskAttachmentType::TLAS)
             {
                 return other.value.tlas.view == view || other.value.tlas.translated_view == view;
@@ -217,7 +216,7 @@ namespace daxa
     auto TaskInterface::get(TaskImageView view) const -> TaskImageAttachmentInfo const &
     {
         auto iter = std::find_if(attachment_infos.begin(), attachment_infos.end(), [&](auto const & other)
-                                 { 
+                                 {
             if (other.type == TaskAttachmentType::IMAGE)
             {
                 return other.value.image.view == view || other.value.image.translated_view == view;
@@ -390,7 +389,7 @@ namespace daxa
                                         taccess.stage == TaskStage::RESOLVE;
 
         ImageLayout layout = ImageLayout::GENERAL;
-        
+
         if (taccess.stage == TaskStage::PRESENT)
         {
             layout = ImageLayout::PRESENT_SRC;
@@ -1305,25 +1304,23 @@ namespace daxa
         DAXA_DBG_ASSERT_TRUE_M(!id.is_empty(), "Detected empty task image id. Please make sure to only use initialized task image ids.");
         if (id.is_external())
         {
-            DAXA_DBG_ASSERT_TRUE_MS(
+            DAXA_DBG_ASSERT_TRUE_M(
                 persistent_image_index_to_local_index.contains(id.index),
-                << "Detected invalid access of persistent task image id "
-                << id.index
-                << " in task graph \""
-                << info.name
-                << "\". Please make sure to declare persistent resource use to each task graph that uses this image with the function use_persistent_image!");
-            return TaskImageView{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index), .slice = id.slice};
+                std::format("Detected invalid access of persistent task image id {} in task graph \"{}\". "
+                            "Please make sure to declare persistent resource use to each task graph that uses this image with the function use_persistent_image!",
+                            id.index, info.name)
+                    .c_str());
+            return TaskImageView{{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index)}, id.slice};
         }
         else
         {
-            DAXA_DBG_ASSERT_TRUE_MS(
+            DAXA_DBG_ASSERT_TRUE_M(
                 id.task_graph_index == this->unique_index,
-                << "Detected invalid access of transient task image id "
-                << (id.index)
-                << " in task graph \""
-                << info.name
-                << "\". Please make sure that you only use transient image within the list they are created in!");
-            return TaskImageView{.task_graph_index = this->unique_index, .index = id.index, .slice = id.slice};
+                std::format("Detected invalid access of transient task image id {} in task graph \"{}\". "
+                            "Please make sure that you only use transient image within the list they are created in!",
+                            id.index, info.name)
+                    .c_str());
+            return TaskImageView{{.task_graph_index = this->unique_index, .index = id.index}, id.slice};
         }
     }
 
@@ -2036,8 +2033,8 @@ namespace daxa
     }
 
     void TaskGraph::add_task(
-        void (*task_callback)(daxa::TaskInterface, void*),
-        u64* task_callback_memory,
+        void (*task_callback)(daxa::TaskInterface, void *),
+        u64 * task_callback_memory,
         std::span<TaskAttachmentInfo> attachments,
         u32 attachment_shader_blob_size,
         u32 attachment_shader_blob_alignment,
