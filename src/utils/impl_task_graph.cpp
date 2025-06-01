@@ -3,7 +3,6 @@
 #include "../impl_core.hpp"
 
 #include <algorithm>
-#include <iostream>
 #include <set>
 
 #include <utility>
@@ -1310,25 +1309,21 @@ namespace daxa
         DAXA_DBG_ASSERT_TRUE_M(!id.is_empty(), "Detected empty task image id. Please make sure to only use initialized task image ids.");
         if (id.is_external())
         {
-            DAXA_DBG_ASSERT_TRUE_MS(
+            DAXA_DBG_ASSERT_TRUE_M(
                 persistent_image_index_to_local_index.contains(id.index),
-                << "Detected invalid access of persistent task image id "
-                << id.index
-                << " in task graph \""
-                << info.name
-                << "\". Please make sure to declare persistent resource use to each task graph that uses this image with the function use_persistent_image!");
-            return TaskImageView{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index), .slice = id.slice};
+                std::format("Detected invalid access of persistent task image id {} in task graph \"{}\". "
+                            "Please make sure to declare persistent resource use to each task graph that uses this image with the function use_persistent_image!",
+                            id.index, info.name));
+            return TaskImageView{{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index)}, id.slice};
         }
         else
         {
-            DAXA_DBG_ASSERT_TRUE_MS(
+            DAXA_DBG_ASSERT_TRUE_M(
                 id.task_graph_index == this->unique_index,
-                << "Detected invalid access of transient task image id "
-                << (id.index)
-                << " in task graph \""
-                << info.name
-                << "\". Please make sure that you only use transient image within the list they are created in!");
-            return TaskImageView{.task_graph_index = this->unique_index, .index = id.index, .slice = id.slice};
+                std::format("Detected invalid access of transient task image id {} in task graph \"{}\". "
+                            "Please make sure that you only use transient image within the list they are created in!",
+                            id.index, info.name));
+            return TaskImageView{{.task_graph_index = this->unique_index, .index = id.index}, id.slice};
         }
     }
 
