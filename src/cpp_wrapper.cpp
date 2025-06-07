@@ -159,7 +159,6 @@ void check_result(daxa_Result result, char const * message, std::array<daxa_Resu
                              std::bit_cast<i32>(result),
                              message)
                              .c_str());
-        throw std::runtime_error({});
     }
 }
 
