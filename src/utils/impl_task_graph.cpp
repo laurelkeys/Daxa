@@ -383,10 +383,6 @@ namespace daxa
     auto task_image_access_to_layout_access(TaskAccess const & taccess) -> std::tuple<ImageLayout, Access, TaskAccessConcurrency>
     {
         auto const [access, concurrency] = task_access_to_access(taccess);
-        bool const used_in_shader = is_task_stage_shader_access(taccess.stage);
-        bool const used_as_attachment = taccess.stage == TaskStage::COLOR_ATTACHMENT ||
-                                        taccess.stage == TaskStage::DEPTH_STENCIL_ATTACHMENT ||
-                                        taccess.stage == TaskStage::RESOLVE;
 
         ImageLayout layout = ImageLayout::GENERAL;
 
@@ -1310,7 +1306,7 @@ namespace daxa
                             "Please make sure to declare persistent resource use to each task graph that uses this image with the function use_persistent_image!",
                             id.index, info.name)
                     .c_str());
-            return TaskImageView{{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index)}, id.slice};
+            return TaskImageView{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index), .slice = id.slice};
         }
         else
         {
@@ -1320,7 +1316,7 @@ namespace daxa
                             "Please make sure that you only use transient image within the list they are created in!",
                             id.index, info.name)
                     .c_str());
-            return TaskImageView{{.task_graph_index = this->unique_index, .index = id.index}, id.slice};
+            return TaskImageView{.task_graph_index = this->unique_index, .index = id.index, .slice = id.slice};
         }
     }
 
