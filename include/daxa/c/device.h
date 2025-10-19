@@ -9,6 +9,11 @@
 #include <daxa/c/swapchain.h>
 #include <daxa/c/sync.h>
 
+// @Temporary: keeping the old code path that makes VK_EXT_host_image_copy a required feature
+// disabled, alongside the new code path wich turns it into an implicit feature.
+#define DAXA_HOST_IMAGE_COPY_REQUIRED 0
+#define DAXA_HOST_IMAGE_COPY_IMPLICIT !DAXA_HOST_IMAGE_COPY_REQUIRED
+
 #define DAXA_MAX_COMPUTE_QUEUE_COUNT 4u
 #define DAXA_MAX_TRANSFER_QUEUE_COUNT 2u
 #define DAXA_MAX_TOTAL_QUEUE_COUNT (1u + DAXA_MAX_COMPUTE_QUEUE_COUNT + DAXA_MAX_TRANSFER_QUEUE_COUNT)
@@ -165,6 +170,19 @@ typedef struct
     uint32_t invocation_reorder_mode;
 } daxa_RayTracingInvocationReorderProperties;
 
+#if DAXA_HOST_IMAGE_COPY_IMPLICIT
+// Is NOT ABI Compatible with VkPhysicalDeviceHostImageCopyProperties!
+typedef struct
+{
+    uint32_t copy_src_layout_count;
+    daxa_ImageLayout * copy_src_layouts;
+    uint32_t copy_dst_layout_count;
+    daxa_ImageLayout * copy_dst_layouts;
+    uint8_t optimal_tiling_layout_uuid[16U];
+    daxa_Bool8 identical_memory_type_requirements;
+} daxa_HostImageCopyProperties;
+#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
+
 // Is NOT ABI Compatible with VkPhysicalDeviceMeshShaderPropertiesEXT!
 typedef struct
 {
@@ -236,7 +254,9 @@ typedef enum
     DAXA_MISSING_REQUIRED_VK_FEATURE_SUBGROUP_SIZE_CONTROL,
     DAXA_MISSING_REQUIRED_VK_FEATURE_COMPUTE_FULL_SUBGROUPS,
     DAXA_MISSING_REQUIRED_VK_FEATURE_SCALAR_BLOCK_LAYOUT,
+#if DAXA_HOST_IMAGE_COPY_REQUIRED
     DAXA_MISSING_REQUIRED_VK_FEATURE_HOST_IMAGE_COPY,
+#endif // #if DAXA_HOST_IMAGE_COPY_REQUIRED
     DAXA_MISSING_REQUIRED_VK_FEATURE_ACCELERATION_STRUCTURE_CAPTURE_REPLAY,
     DAXA_MISSING_REQUIRED_VK_FEATURE_VULKAN_MEMORY_MODEL,
     DAXA_MISSING_REQUIRED_VK_FEATURE_ROBUST_BUFFER_ACCESS2,
@@ -273,6 +293,9 @@ typedef enum
     DAXA_IMPLICIT_FEATURE_FLAG_SWAPCHAIN = 0x1 << 12,
     DAXA_IMPLICIT_FEATURE_FLAG_SHADER_INT16 = 0x1 << 13,
     DAXA_IMPLICIT_FEATURE_FLAG_SHADER_CLOCK = 0x1 << 14,
+#if DAXA_HOST_IMAGE_COPY_IMPLICIT
+    DAXA_IMPLICIT_FEATURE_FLAG_HOST_IMAGE_COPY = 0x1 << 15,
+#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
 } daxa_DeviceImplicitFeatureFlagBits;
 
 typedef daxa_DeviceImplicitFeatureFlagBits daxa_ImplicitFeatureFlags;
@@ -291,6 +314,9 @@ typedef struct
     daxa_Optional(daxa_RayTracingPipelineProperties) ray_tracing_pipeline_properties;
     daxa_Optional(daxa_AccelerationStructureProperties) acceleration_structure_properties;
     daxa_Optional(daxa_RayTracingInvocationReorderProperties) ray_tracing_invocation_reorder_properties;
+#if DAXA_HOST_IMAGE_COPY_IMPLICIT
+    daxa_Optional(daxa_HostImageCopyProperties) host_image_copy_properties;
+#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
     daxa_u32 compute_queue_count;
     daxa_u32 transfer_queue_count;
     daxa_ImplicitFeatureFlags implicit_features;
@@ -517,7 +543,7 @@ typedef enum
 typedef struct
 {
     daxa_MemoryImageCopyFlagBits flags;
-    uint8_t const* memory_ptr;
+    uint8_t const * memory_ptr;
     daxa_ImageId image_id;
     /*[[deprecated("Ignored parameter, layout must be GENERAL; API:3.2")]] */ daxa_ImageLayout image_layout;
     daxa_ImageArraySlice image_slice;
@@ -536,7 +562,7 @@ typedef struct
     daxa_ImageArraySlice image_slice;
     VkOffset3D image_offset;
     VkExtent3D image_extent;
-    uint8_t* memory_ptr;
+    uint8_t * memory_ptr;
 } daxa_ImageToMemoryCopyInfo;
 
 static daxa_ImageToMemoryCopyInfo const DAXA_DEFAULT_IMAGE_TO_MEMORY_COPY_INFO = DAXA_ZERO_INIT;

@@ -258,7 +258,9 @@ namespace daxa
         SUBGROUP_SIZE_CONTROL,
         COMPUTE_FULL_SUBGROUPS,
         SCALAR_BLOCK_LAYOUT,
+#if DAXA_HOST_IMAGE_COPY_REQUIRED
         HOST_IMAGE_COPY,
+#endif // #if DAXA_HOST_IMAGE_COPY_REQUIRED
         ACCELERATION_STRUCTURE_CAPTURE_REPLAY,
         VULKAN_MEMORY_MODEL,
         ROBUST_BUFFER_ACCESS2,
@@ -360,7 +362,7 @@ namespace daxa
     struct MemoryToImageCopyInfo
     {
         MemoryImageCopyFlagBits flags = {};
-        std::byte const* memory_ptr = {};
+        std::byte const * memory_ptr = {};
         ImageId image = {};
         [[deprecated("Ignored parameter, layout must be GENERAL; API:3.2")]] ImageLayout image_layout = {};
         ImageArraySlice image_slice = {};
@@ -376,7 +378,7 @@ namespace daxa
         ImageArraySlice image_slice = {};
         Offset3D image_offset = {};
         Extent3D image_extent = {};
-        std::byte* memory_ptr = {};
+        std::byte * memory_ptr = {};
     };
 
     struct HostImageLayoutTransitionInfo
@@ -513,7 +515,7 @@ namespace daxa
         MemoryBlock handle = {};
         u64 memory_size = {};
     };
-    
+
     struct DeviceMemoryReport
     {
         u64 total_device_memory_use = {};
@@ -533,7 +535,7 @@ namespace daxa
         BlasIdDeviceMemorySizePair * blas_list = {};
         MemoryBLockDeviceMemorySizePair * memory_block_list = {};
     };
-    
+
     struct DeviceMemoryReportConvenient
     {
         u64 total_device_memory_use = {};

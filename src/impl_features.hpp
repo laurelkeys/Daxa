@@ -4,7 +4,6 @@
 #include <daxa/daxa.hpp>
 #include <daxa/device.hpp>
 
-
 #include <daxa/c/device.h>
 
 // Adding a new vulkan feature bool to daxa:
@@ -135,6 +134,9 @@ namespace daxa
         VkPhysicalDeviceAccelerationStructurePropertiesKHR physical_device_acceleration_structure_properties_khr = {};
         VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV physical_device_ray_tracing_invocation_reorder_properties_nv = {};
         VkPhysicalDeviceMeshShaderPropertiesEXT physical_device_mesh_shader_properties_ext = {};
+#if !DAXA_HOST_IMAGE_COPY_REQUIRED
+        VkPhysicalDeviceHostImageCopyPropertiesEXT physical_device_host_image_copy_properties_ext = {};
+#endif // #if !DAXA_HOST_IMAGE_COPY_REQUIRED
         VkPhysicalDeviceProperties2 physical_device_properties_2 = {};
 
         void initialize(daxa_DeviceImplicitFeatureFlagBits implicit_features);
