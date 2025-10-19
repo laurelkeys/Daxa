@@ -152,13 +152,11 @@ auto construct_daxa_physical_device_properties(VkPhysicalDevice physical_device)
         .pNext = nullptr,
     };
 
-#if DAXA_HOST_IMAGE_COPY_IMPLICIT
     bool host_image_copy_supported = false;
     VkPhysicalDeviceHostImageCopyPropertiesEXT vk_physical_device_host_image_copy_properties_ext = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT,
         .pNext = nullptr,
     };
-#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
 
     void * pNextChain = nullptr;
 
@@ -192,14 +190,12 @@ auto construct_daxa_physical_device_properties(VkPhysicalDevice physical_device)
             vk_physical_device_mesh_shader_properties_ext.pNext = pNextChain;
             pNextChain = &vk_physical_device_mesh_shader_properties_ext;
         }
-#if DAXA_HOST_IMAGE_COPY_IMPLICIT
         if (std::strcmp(extension.extensionName, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME) == 0)
         {
             host_image_copy_supported = true;
             vk_physical_device_host_image_copy_properties_ext.pNext = pNextChain;
             pNextChain = &vk_physical_device_host_image_copy_properties_ext;
         }
-#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
     }
 
     VkPhysicalDeviceProperties2 vk_physical_device_properties2 = {
@@ -250,7 +246,6 @@ auto construct_daxa_physical_device_properties(VkPhysicalDevice physical_device)
         ret.mesh_shader_properties.value.prefers_compact_vertex_output = static_cast<daxa_Bool8>(vk_physical_device_mesh_shader_properties_ext.prefersCompactVertexOutput);
         ret.mesh_shader_properties.value.prefers_compact_primitive_output = static_cast<daxa_Bool8>(vk_physical_device_mesh_shader_properties_ext.prefersCompactPrimitiveOutput);
     }
-#if DAXA_HOST_IMAGE_COPY_IMPLICIT
     if (host_image_copy_supported)
     {
         ret.host_image_copy_properties.has_value = 1;
@@ -260,7 +255,6 @@ auto construct_daxa_physical_device_properties(VkPhysicalDevice physical_device)
             sizeof(daxa_HostImageCopyProperties));
         ret.host_image_copy_properties.value.identical_memory_type_requirements = static_cast<daxa_Bool8>(vk_physical_device_host_image_copy_properties_ext.identicalMemoryTypeRequirements);
     }
-#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
 
     u32 queue_family_props_count = 0;
     std::vector<VkQueueFamilyProperties> queue_props;

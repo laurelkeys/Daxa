@@ -167,9 +167,6 @@ namespace daxa
             chain = static_cast<void *>(&physical_device_shader_clock_features_khr);
         }
 
-#if DAXA_HOST_IMAGE_COPY_REQUIRED
-        // Note: this was already using an if, even though it should technically assume that for a required feature the extension is present.
-#endif // #if DAXA_HOST_IMAGE_COPY_REQUIRED
         if (extensions.extensions_present[extensions.physical_device_host_image_copy_ext])
         {
             physical_device_host_image_copy_features_ext.pNext = chain;
@@ -226,9 +223,6 @@ namespace daxa
         RequiredFeature{offsetof(PhysicalDeviceFeaturesStruct, physical_device_subgroup_size_control_features.subgroupSizeControl), DAXA_MISSING_REQUIRED_VK_FEATURE_SUBGROUP_SIZE_CONTROL},
         RequiredFeature{offsetof(PhysicalDeviceFeaturesStruct, physical_device_subgroup_size_control_features.computeFullSubgroups), DAXA_MISSING_REQUIRED_VK_FEATURE_COMPUTE_FULL_SUBGROUPS},
         RequiredFeature{offsetof(PhysicalDeviceFeaturesStruct, physical_device_scalar_block_layout_features.scalarBlockLayout), DAXA_MISSING_REQUIRED_VK_FEATURE_SCALAR_BLOCK_LAYOUT},
-#if DAXA_HOST_IMAGE_COPY_REQUIRED
-        RequiredFeature{offsetof(PhysicalDeviceFeaturesStruct, physical_device_host_image_copy_features_ext.hostImageCopy), DAXA_MISSING_REQUIRED_VK_FEATURE_HOST_IMAGE_COPY},
-#endif // #if DAXA_HOST_IMAGE_COPY_REQUIRED
     };
 
     // === Implicit Features ===
@@ -331,11 +325,9 @@ namespace daxa
         offsetof(PhysicalDeviceFeaturesStruct, physical_device_shader_clock_features_khr.shaderDeviceClock),
     };
 
-#if DAXA_HOST_IMAGE_COPY_IMPLICIT
     constexpr static std::array DAXA_IMPLICIT_FEATURE_FLAG_HOST_IMAGE_COPY_VK_FEATURES = std::array{
         offsetof(PhysicalDeviceFeaturesStruct, physical_device_host_image_copy_features_ext.hostImageCopy),
     };
-#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
 
     constexpr static std::array IMPLICIT_FEATURES = std::array{
         ImplicitFeature{DAXA_IMPLICIT_FEATURE_FLAG_MESH_SHADER_VK_FEATURES, DAXA_IMPLICIT_FEATURE_FLAG_MESH_SHADER},
@@ -353,9 +345,7 @@ namespace daxa
         ImplicitFeature{DAXA_IMPLICIT_FEATURE_FLAG_SWAPCHAIN_VK_FEATURES, DAXA_IMPLICIT_FEATURE_FLAG_SWAPCHAIN},
         ImplicitFeature{DAXA_IMPLICIT_FEATURE_FLAG_SHADER_INT16_VK_FEATURES, DAXA_IMPLICIT_FEATURE_FLAG_SHADER_INT16},
         ImplicitFeature{DAXA_IMPLICIT_FEATURE_FLAG_SHADER_CLOCK_VK_FEATURES, DAXA_IMPLICIT_FEATURE_FLAG_SHADER_CLOCK},
-#if DAXA_HOST_IMAGE_COPY_IMPLICIT
         ImplicitFeature{DAXA_IMPLICIT_FEATURE_FLAG_HOST_IMAGE_COPY_VK_FEATURES, DAXA_IMPLICIT_FEATURE_FLAG_HOST_IMAGE_COPY},
-#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
     };
 
     // === Explicit Features ===
@@ -516,14 +506,12 @@ namespace daxa
             chain = static_cast<void *>(&physical_device_mesh_shader_properties_ext);
         }
 
-#if DAXA_HOST_IMAGE_COPY_IMPLICIT
         if (implicit_features & DAXA_IMPLICIT_FEATURE_FLAG_HOST_IMAGE_COPY)
         {
             physical_device_host_image_copy_properties_ext.pNext = chain;
             physical_device_host_image_copy_properties_ext.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT;
             chain = static_cast<void *>(&physical_device_host_image_copy_properties_ext);
         }
-#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
 
         physical_device_properties_2.pNext = chain;
         physical_device_properties_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -586,7 +574,6 @@ namespace daxa
             out->mesh_shader_properties.value.prefers_compact_vertex_output = static_cast<daxa_Bool8>(properties_struct.physical_device_mesh_shader_properties_ext.prefersCompactVertexOutput);
             out->mesh_shader_properties.value.prefers_compact_primitive_output = static_cast<daxa_Bool8>(properties_struct.physical_device_mesh_shader_properties_ext.prefersCompactPrimitiveOutput);
         }
-#if DAXA_HOST_IMAGE_COPY_IMPLICIT
         if (out->implicit_features & DAXA_IMPLICIT_FEATURE_FLAG_HOST_IMAGE_COPY)
         {
             out->host_image_copy_properties.has_value = 1;
@@ -596,7 +583,6 @@ namespace daxa
                 sizeof(daxa_HostImageCopyProperties));
             out->host_image_copy_properties.value.identical_memory_type_requirements = static_cast<daxa_Bool8>(properties_struct.physical_device_host_image_copy_properties_ext.identicalMemoryTypeRequirements);
         }
-#endif // #if DAXA_HOST_IMAGE_COPY_IMPLICIT
 
         u32 queue_family_props_count = 0;
         std::vector<VkQueueFamilyProperties> queue_props;
