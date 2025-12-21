@@ -161,7 +161,6 @@ void check_result(daxa_Result result, char const * message, std::array<daxa_Resu
                              daxa_result_to_string(result),
                              std::bit_cast<i32>(result),
                              message));
-        throw std::runtime_error({});
     }
 }
 
@@ -497,11 +496,13 @@ namespace daxa
         check_result(result, "failed copy image to memory");
     }
 
+#if !DAXA_REMOVE_DEPRECATED
     void Device::transition_image_layout(HostImageLayoutTransitionInfo const& info) 
     {
         auto result = daxa_dvc_transition_image_layout(r_cast<daxa_Device>(this->object), r_cast<daxa_HostImageLayoutTransitionInfo const*>(&info));
         check_result(result, "failed host transition image layout");
     }
+#endif
 
     void Device::image_layout_operation(HostImageLayoutOperationInfo const& info) 
     {
@@ -1158,6 +1159,7 @@ namespace daxa
     DAXA_DECL_COMMAND_LIST_WRAPPER_CHECK_RESULT(CommandRecorder, pipeline_barrier, BarrierInfo)
     DAXA_DECL_COMMAND_LIST_WRAPPER_CHECK_RESULT(CommandRecorder, pipeline_image_barrier, ImageBarrierInfo)
 
+#if !DAXA_REMOVE_DEPRECATED
     [[deprecated]] void CommandRecorder::pipeline_barrier_image_transition(ImageMemoryBarrierInfo const & info)
     {
         // All non general image layouts are treated as general layout.
@@ -1176,13 +1178,15 @@ namespace daxa
         
         this->pipeline_image_barrier(new_info);
     }
+#endif
 
     DAXA_DECL_COMMAND_LIST_WRAPPER_CHECK_RESULT(CommandRecorder, signal_event, EventSignalInfo)
 
     void CommandRecorder::wait_events(daxa::Span<EventWaitInfo const> const & infos)
     {
-        daxa_cmd_wait_events(
+        auto result = daxa_cmd_wait_events(
             this->internal, r_cast<daxa_EventSignalInfo const *>(infos.data()), infos.size());
+        check_result(result, "failed in wait events");
     }
 
     DAXA_DECL_COMMAND_LIST_WRAPPER_CHECK_RESULT(CommandRecorder, wait_event, EventWaitInfo)
@@ -1351,6 +1355,7 @@ namespace daxa
         return std::format("access: ({}) -> ({})", to_string(info.src_access), to_string(info.dst_access));
     }
 
+#if !DAXA_REMOVE_DEPRECATED
     [[deprecated]] auto to_string(ImageMemoryBarrierInfo const & info) -> std::string
     {
         return std::format("access: ({}) -> ({}), layout: ({}) -> ({}), id: {}, SLICE IGNORED",
@@ -1360,6 +1365,7 @@ namespace daxa
                            to_string(info.dst_layout),
                            to_string(info.image_id));
     }
+#endif
     
     DAXA_EXPORT_CXX auto to_string(ImageBarrierInfo const & info) -> std::string
     {

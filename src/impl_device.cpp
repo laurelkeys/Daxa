@@ -1940,10 +1940,11 @@ auto daxa_ImplDevice::create_2(daxa_Instance instance, daxa_DeviceInfo2 const & 
 #if VMA_MEMORY_BUDGET || VMA_VULKAN_VERSION >= 1001000
         .vkGetPhysicalDeviceMemoryProperties2KHR = {},
 #endif
-#if VMA_VULKAN_VERSION >= 1003000
+#if VMA_KHR_MAINTENANCE4 || VMA_VULKAN_VERSION >= 1003000
         .vkGetDeviceBufferMemoryRequirements = {},
         .vkGetDeviceImageMemoryRequirements = {},
 #endif
+        .vkGetMemoryWin32HandleKHR = {},
     };
 
     VmaAllocatorCreateInfo const vma_allocator_create_info{
@@ -2763,6 +2764,7 @@ auto daxa_dvc_copy_image_to_memory(daxa_Device self, daxa_ImageToMemoryCopyInfo 
     return result;
 }
 
+#if !DAXA_REMOVE_DEPRECATED
 auto daxa_dvc_transition_image_layout(daxa_Device self, daxa_HostImageLayoutTransitionInfo const * info) -> daxa_Result
 {
     daxa_HostImageLayoutOperationInfo new_info = {};
@@ -2777,6 +2779,7 @@ auto daxa_dvc_transition_image_layout(daxa_Device self, daxa_HostImageLayoutTran
     }
     return daxa_dvc_image_layout_operation(self, &new_info);
 }
+#endif
 
 auto daxa_dvc_image_layout_operation(daxa_Device self, daxa_HostImageLayoutOperationInfo const * info) -> daxa_Result
 {

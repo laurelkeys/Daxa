@@ -244,7 +244,7 @@ namespace daxa
 
     auto to_access_type(TaskAccessType taccess) -> AccessTypeFlags
     {
-        AccessTypeFlags ret;
+        AccessTypeFlags ret = {};
         switch (taccess)
         {
         case TaskAccessType::NONE: ret = AccessTypeFlagBits::NONE; break;
@@ -326,9 +326,8 @@ namespace daxa
     {
         bool const used_as_read = (static_cast<u32>(taccess.type) & static_cast<u32>(TaskAccessType::READ)) != 0;
         bool const used_as_write = (static_cast<u32>(taccess.type) & static_cast<u32>(TaskAccessType::WRITE)) != 0;
-        bool const used_as_sampled = (static_cast<u32>(taccess.type) & static_cast<u32>(TaskAccessType::SAMPLED)) != 0;
         bool const used_in_shader = is_task_stage_shader_access(taccess.stage);
-        bool const used_as_sampled_image = used_in_shader && used_as_sampled;
+        bool const used_as_sampled_image = used_in_shader && used_as_read;
         bool const used_as_storage_image = used_in_shader && (used_as_read || used_as_write);
         bool const used_as_color_attachment = taccess.stage == TaskStage::COLOR_ATTACHMENT || taccess.stage == TaskStage::RESOLVE;
         bool const used_as_ds_attachment = taccess.stage == TaskStage::DEPTH_STENCIL_ATTACHMENT;
@@ -1314,7 +1313,7 @@ namespace daxa
                 std::format("Detected invalid access of persistent task image id {} in task graph \"{}\". "
                             "Please make sure to declare persistent resource use to each task graph that uses this image with the function use_persistent_image!",
                             id.index, info.name));
-            return TaskImageView{{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index)}, id.slice};
+            return TaskImageView{.task_graph_index = this->unique_index, .index = persistent_image_index_to_local_index.at(id.index), .slice = id.slice};
         }
         else
         {
@@ -1323,7 +1322,7 @@ namespace daxa
                 std::format("Detected invalid access of transient task image id {} in task graph \"{}\". "
                             "Please make sure that you only use transient image within the list they are created in!",
                             id.index, info.name));
-            return TaskImageView{{.task_graph_index = this->unique_index, .index = id.index}, id.slice};
+            return TaskImageView{.task_graph_index = this->unique_index, .index = id.index, .slice = id.slice};
         }
     }
 
@@ -2504,7 +2503,6 @@ namespace daxa
                 task_image.usage |= access_to_usage(used_image_t_access);
                 task_image.create_flags |= view_type_to_create_flags(image_attach.view_type);
                 auto [current_image_layout, current_image_access, current_access_concurrency] = task_image_access_to_layout_access(used_image_t_access);
-                image_attach.layout = current_image_layout;
                 image_attach.access = current_image_access;
                 // Now this seems strange, why would be need multiple current use slices, as we only have one here.
                 // This is because when we intersect this slice with the tracked slices, we get an intersection and a rest.
@@ -3446,6 +3444,7 @@ namespace daxa
                         std::string(" of task image \"") +
                         std::string(impl.global_image_infos[barrier.image_id.index].name) +
                         std::string("\" is invalid"));
+#if !DAXA_REMOVE_DEPRECATED
                 command_list.pipeline_barrier_image_transition({
                     .src_access = barrier.src_access,
                     .dst_access = barrier.dst_access,
@@ -3453,6 +3452,23 @@ namespace daxa
                     .dst_layout = barrier.layout_after,
                     .image_id = image,
                 });
+#else
+                ImageLayoutOperation op = {};
+                if (barrier.layout_before == ImageLayout::UNDEFINED)
+                {
+                    op = ImageLayoutOperation::TO_GENERAL;
+                }
+                if (barrier.layout_after == ImageLayout::PRESENT_SRC)
+                {
+                    op = ImageLayoutOperation::TO_PRESENT_SRC;
+                }
+                command_list.pipeline_image_barrier({
+                    .src_access = barrier.src_access,
+                    .dst_access = barrier.dst_access,
+                    .image_id = image,
+                    .layout_operation = op,
+                });
+#endif
             }
         }
     }
@@ -3563,6 +3579,7 @@ namespace daxa
                         {
                             for (auto execution_image_id : impl.get_actual_images(TaskImageView{.task_graph_index = impl.unique_index, .index = task_image_index}, permutation))
                             {
+#if !DAXA_REMOVE_DEPRECATED
                                 ImageMemoryBarrierInfo const img_barrier_info{
                                     .src_access = previous_access_slices[previous_access_slice_index].latest_access,
                                     .dst_access = remaining_first_accesses[first_access_slice_index].state.latest_access,
@@ -3571,6 +3588,24 @@ namespace daxa
                                     .image_id = execution_image_id,
                                 };
                                 recorder.pipeline_barrier_image_transition(img_barrier_info);
+#else
+                                ImageLayoutOperation op = {};
+                                if (previous_access_slices[previous_access_slice_index].latest_layout == ImageLayout::UNDEFINED)
+                                {
+                                    op = ImageLayoutOperation::TO_GENERAL;
+                                }
+                                if (remaining_first_accesses[first_access_slice_index].state.latest_layout == ImageLayout::PRESENT_SRC)
+                                {
+                                    op = ImageLayoutOperation::TO_PRESENT_SRC;
+                                }
+                                ImageBarrierInfo const img_barrier_info{
+                                    .src_access = previous_access_slices[previous_access_slice_index].latest_access,
+                                    .dst_access = remaining_first_accesses[first_access_slice_index].state.latest_access,
+                                    .image_id = execution_image_id,
+                                    .layout_operation = op,
+                                };
+                                recorder.pipeline_image_barrier(img_barrier_info);
+#endif
                                 if (impl.info.record_debug_information)
                                 {
                                     std::format_to(std::back_inserter(out), "{}{}\n", indent, to_string(img_barrier_info));
@@ -3624,6 +3659,7 @@ namespace daxa
                 {
                     for (auto execution_image_id : impl.get_actual_images(TaskImageView{.task_graph_index = impl.unique_index, .index = task_image_index}, permutation))
                     {
+#if !DAXA_REMOVE_DEPRECATED
                         ImageMemoryBarrierInfo const img_barrier_info{
                             .src_access = AccessConsts::NONE,
                             .dst_access = remaining_first_accesse.state.latest_access,
@@ -3632,6 +3668,20 @@ namespace daxa
                             .image_id = execution_image_id,
                         };
                         recorder.pipeline_barrier_image_transition(img_barrier_info);
+#else
+                        ImageLayoutOperation op = ImageLayoutOperation::TO_GENERAL;
+                        if (remaining_first_accesse.state.latest_layout == ImageLayout::PRESENT_SRC)
+                        {
+                            op = ImageLayoutOperation::TO_PRESENT_SRC;
+                        }
+                        ImageBarrierInfo const img_barrier_info{
+                            .src_access = AccessConsts::NONE,
+                            .dst_access = remaining_first_accesse.state.latest_access,
+                            .image_id = execution_image_id,
+                            .layout_operation = op,
+                        };
+                        recorder.pipeline_image_barrier(img_barrier_info);
+#endif
                         if (impl.info.record_debug_information)
                         {
                             std::format_to(std::back_inserter(out), "{}{}\n", indent, to_string(img_barrier_info));

@@ -51,7 +51,7 @@
 #define DAXA_REMOVE_DEPRECATED 0
 #include <daxa/daxa.hpp>
 #include <vulkan/vulkan.h>
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include <daxa/c/daxa.h>
 
 using namespace daxa;
