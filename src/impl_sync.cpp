@@ -134,6 +134,7 @@ auto daxa_timeline_semaphore_signal_value(daxa_TimelineSemaphore self, uint64_t 
 {
     VkSemaphoreSignalInfo const vk_semaphore_signal_info = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,
+        .pNext = nullptr,
         .semaphore = self->vk_semaphore,
         .value = value
     };

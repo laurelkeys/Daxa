@@ -615,8 +615,7 @@ auto daxa_cmd_wait_events(daxa_CommandRecorder self, daxa_EventWaitInfo const * 
 auto daxa_cmd_wait_event(daxa_CommandRecorder self, daxa_EventWaitInfo const * info) -> daxa_Result
 {
     DAXA_CHECK_UNCOMPLETED(self)
-    daxa_cmd_wait_events(self, info, 1);
-    return DAXA_RESULT_SUCCESS;
+    return daxa_cmd_wait_events(self, info, 1);
 }
 
 auto daxa_cmd_reset_event(daxa_CommandRecorder self, daxa_ResetEventInfo const * info) -> daxa_Result

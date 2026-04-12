@@ -1,8 +1,6 @@
 #if DAXA_BUILT_WITH_UTILS_TASK_GRAPH
 #include <daxa/utils/task_graph_types.hpp>
 
-#define TASK_GRAPH_RESOURCE_VIEWER_ONLINE_COMPILE_SHADERS 1
-
 #if DAXA_BUILT_WITH_UTILS_IMGUI
 
 #include "impl_task_graph_ui.hpp"
@@ -58,7 +56,7 @@ namespace ImGui
                 ImGuiTableColumn * column = &table->Columns[column_n];
                 if ((column->Flags & ImGuiTableColumnFlags_AngledHeader) == 0) // Note: can't rely on ImGuiTableColumnFlags_IsVisible test here.
                     continue;
-                ImGuiTableHeaderData request = {(ImGuiTableColumnIdx)column_n, text_color[order_n], colors[order_n], 0};
+                ImGuiTableHeaderData request = {static_cast<ImGuiTableColumnIdx>(column_n), text_color[order_n], colors[order_n], 0};
                 temp_data->AngledHeadersRequests.push_back(request);
             }
 
@@ -197,7 +195,7 @@ namespace daxa
             ResourceViewerState & state = ui_context.resource_viewer_states.at(std::string(resource.name));
             if (access_timeline_index != ~0u)
             {
-                state.timeline_index = access_timeline_index;
+                state.timeline_index = static_cast<i32>(access_timeline_index);
             }
             if (state.free_window)
             {
@@ -245,7 +243,7 @@ namespace daxa
             }
             if (access_timeline_index != ~0u)
             {
-                ui_context.resource_viewer_states[std::string(resource.name)].timeline_index = access_timeline_index;
+                ui_context.resource_viewer_states[std::string(resource.name)].timeline_index = static_cast<i32>(access_timeline_index);
             }
         }
     }
@@ -254,7 +252,7 @@ namespace daxa
     {
         for (auto & c : str)
         {
-            c = std::tolower(c);
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         }
         return str;
     }
@@ -295,6 +293,7 @@ namespace daxa
         case TaskAccessType::READ_WRITE: ret = ColorPalette::BLUE; break;
         case TaskAccessType::WRITE_CONCURRENT: ret = ColorPalette::DARK_RED; break;
         case TaskAccessType::READ_WRITE_CONCURRENT: ret = ColorPalette::DARK_BLUE; break; 
+        default: break;
         }
         return ret;
     }
@@ -319,6 +318,7 @@ namespace daxa
         case TaskType::COMPUTE: ret = ImVec4(0.95500f, 0.58500f, 0.09300f, 1.0f); break;     //        #F9C74F
         case TaskType::RAY_TRACING: ret = ImVec4(0.70110f, 0.02113f, 0.04362f, 1.0f); break; //    #EF233C
         case TaskType::TRANSFER: ret = ImVec4(0.03112f, 0.78413f, 0.60552f, 1.0f); break;    //       #06D6A0
+        default: break;
         }
         return ret;
     }
@@ -333,6 +333,7 @@ namespace daxa
         case TaskResourceKind::IMAGE: ret = ImVec4(0.2039f, 0.5961f, 0.8588f, 1.0f); break;
         case TaskResourceKind::BLAS: ret = ImVec4(0.6078f, 0.3490f, 0.7137f, 1.0f); break;
         case TaskResourceKind::TLAS: ret = ImVec4(0.9451f, 0.7686f, 0.0588f, 1.0f); break;
+        default: break;
         }
         return ret;
     }
@@ -345,6 +346,7 @@ namespace daxa
         case QueueType::MAIN: ret = ImVec4(0.47060f, 0.52941f, 0.61960f, 1.0f); break;     //           #8D99AE
         case QueueType::COMPUTE: ret = ImVec4(0.95500f, 0.58500f, 0.09300f, 1.0f); break;  //        #F9C74F
         case QueueType::TRANSFER: ret = ImVec4(0.03112f, 0.78413f, 0.60552f, 1.0f); break; //       #06D6A0
+        default: break;
         }
         // ret.x = std::sqrt(ret.x);
         // ret.y = std::sqrt(ret.y);
@@ -626,7 +628,7 @@ namespace daxa
                 {
                     if (ImGui::Button("Set Viewer access to task"))
                     {
-                        ui_context.resource_viewer_states[std::string(resource.name)].timeline_index = task.attachment_access_groups[attachment_index].second;
+                        ui_context.resource_viewer_states[std::string(resource.name)].timeline_index = static_cast<i32>(task.attachment_access_groups[attachment_index].second);
                     }
                 }
             }
@@ -647,14 +649,11 @@ namespace daxa
             return;
         }
         ImplTaskResource const & resource = impl_tg->resources[resource_index];
-        bool const detail_window_open = ui_context.open_resource_detail_windows.contains(std::string(resource.name).c_str());
-        static bool double_clicked_in_previous_frame = {};
         if (ImGui::IsItemDoubleClicked(0))
         {
             open_or_focus_resource_detail_ui(ui_context, impl_tg, resource_index);
             open_or_focus_resource_viewer(ui_context, impl_tg, resource_index, access_timeline_index);
         }
-        double_clicked_in_previous_frame = ImGui::IsMouseDoubleClicked(0);
         if (ImGui::BeginPopupContextItem(resource.name.data()))
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, ImGui::GetStyle().FramePadding.y));
@@ -673,13 +672,12 @@ namespace daxa
             }
             if (access_timeline_index != ~0u)
             {
-                ImplTaskResource & resource = impl_tg->resources[resource_index];
                 bool const viewer_exists = ui_context.resource_viewer_states.contains(std::string(resource.name));
                 if (viewer_exists)
                 {
                     if (ImGui::Button("Set Viewer access to task"))
                     {
-                        ui_context.resource_viewer_states[std::string(resource.name)].timeline_index = access_timeline_index;
+                        ui_context.resource_viewer_states[std::string(resource.name)].timeline_index = static_cast<i32>(access_timeline_index);
                     }
                 }
             }
@@ -692,8 +690,6 @@ namespace daxa
     {
         static float world_canvas_scale = 1.0f;
         static ImVec2 world_canvas_offset(500.0f, 500.0f);
-
-        static bool adding_line = false;
 
         ImVec2 screen_canvas_top_left_corner = ImGui::GetCursorScreenPos(); // ImDrawList API uses screen coordinates!
         ImVec2 screen_canvas_size = ImGui::GetContentRegionAvail();         // Resize canvas to what's available
@@ -781,8 +777,6 @@ namespace daxa
         }
 
         // Context menu (under default mouse threshold)
-        ImVec2 drag_delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-
         float const GRID_STEP = 50.0f;
         // Draw grid + all lines in the canvas
         draw_list->PushClipRect(screen_canvas_top_left_corner, screen_canvas_bottom_right_corner, true);
@@ -802,14 +796,14 @@ namespace daxa
 
                 for (u32 i = 0; i < vertical_lines; ++i)
                 {
-                    ImVec2 start = {first_world_x + GRID_STEP * i, canvas_world_p0.y};
-                    ImVec2 end = {first_world_x + GRID_STEP * i, canvas_world_p1.y};
+                    ImVec2 start = {first_world_x + GRID_STEP * static_cast<float>(i), canvas_world_p0.y};
+                    ImVec2 end = {first_world_x + GRID_STEP * static_cast<float>(i), canvas_world_p1.y};
                     draw_list->AddLine(world_to_screen(start), world_to_screen(end), IM_COL32(200, 200, 200, 40));
                 }
                 for (u32 i = 0; i < horizontal_lines; ++i)
                 {
-                    ImVec2 start = {canvas_world_p0.x, first_world_y + GRID_STEP * i};
-                    ImVec2 end = {canvas_world_p1.x, first_world_y + GRID_STEP * i};
+                    ImVec2 start = {canvas_world_p0.x, first_world_y + GRID_STEP * static_cast<float>(i)};
+                    ImVec2 end = {canvas_world_p1.x, first_world_y + GRID_STEP * static_cast<float>(i)};
                     draw_list->AddLine(world_to_screen(start), world_to_screen(end), IM_COL32(200, 200, 200, 40));
                 }
             }
@@ -818,7 +812,7 @@ namespace daxa
             /// ==== DRAW RESOURCE MEMORY HEAP ====
             /// ===================================
 
-            ImVec2 const max_extent = ImVec2(impl_tg->flat_batch_count, impl_tg->resource_memory_block.info().requirements.size);
+            ImVec2 const max_extent = ImVec2(static_cast<float>(impl_tg->flat_batch_count), static_cast<float>(impl_tg->resource_memory_block.info().requirements.size));
             ImVec2 const world_extent = ImVec2((max_extent.x) * GRID_STEP, (max_extent.y / (8192.0f * 1024 * 4)) * GRID_STEP);
 
             float const width_scale = 1.0f / max_extent.x * world_extent.x;
@@ -836,12 +830,12 @@ namespace daxa
                 }
 
                 ImVec2 start = ImVec2(
-                    resource.final_schedule_first_batch * width_scale,
-                    (resource.allocation_offset / max_extent.y) * world_extent.y);
+                    static_cast<float>(resource.final_schedule_first_batch) * width_scale,
+                    (static_cast<float>(resource.allocation_offset) / max_extent.y) * world_extent.y);
 
                 ImVec2 end = ImVec2(
-                    resource.final_schedule_last_batch * width_scale + width_scale,
-                    ((resource.allocation_offset + resource.allocation_size) / max_extent.y) * world_extent.y);
+                    static_cast<float>(resource.final_schedule_last_batch) * width_scale + width_scale,
+                    (static_cast<float>(resource.allocation_offset + resource.allocation_size) / max_extent.y) * world_extent.y);
 
                 {
                     auto clip = [&](ImVec2 in) -> ImVec2
@@ -859,7 +853,7 @@ namespace daxa
                         ImGui::SetCursorScreenPos(clipped_start);
                         auto const size = ImVec2(clipped_end.x - clipped_start.x, clipped_end.y - clipped_start.y);
                         ImGui::InvisibleButton(std::format("##LALA{}", resource.name.data()).c_str(), size);
-                        ImGui::SetItemTooltip(resource.name.data());
+                        ImGui::SetItemTooltip("%s", resource.name.data());
                         resource_popup_context_ui(ui_context, impl_tg, resource_index, true);
                         ImVec4 const fill_color = resource_kind_to_color(resource.kind);
                         ImVec4 const fill_color_final = ImGui::IsItemHovered() ? ImVec4(fill_color.x * 1.3f, fill_color.y * 1.3f, fill_color.z * 1.3f, 1.0f) : fill_color;
@@ -905,8 +899,8 @@ namespace daxa
                                 acc_queues_vert_offset,
                             };
                             ImVec2 end = {
-                                acc_submit_hor_offset + WS_BATCH_HORIZONTAL_DISTANCE * queue_batches.size(),
-                                acc_queues_vert_offset + WS_TASK_VERTICAL_DISTANCE * max_tasks_in_batches,
+                                acc_submit_hor_offset + WS_BATCH_HORIZONTAL_DISTANCE * static_cast<float>(queue_batches.size()),
+                                acc_queues_vert_offset + WS_TASK_VERTICAL_DISTANCE * static_cast<float>(max_tasks_in_batches),
                             };
                             draw_list->ChannelsSetCurrent(0); // Background
                             draw_list->AddRectFilled(world_to_screen(start), world_to_screen(end), IM_COL32(80, 80, 100, 127), 8.0f);
@@ -921,8 +915,8 @@ namespace daxa
                                 auto [task, task_i] = batch.tasks[queue_batch_task_i];
 
                                 ImVec2 task_cell_center_position = {
-                                    acc_submit_hor_offset + (queue_batch_i + 0.5f) * WS_BATCH_HORIZONTAL_DISTANCE,
-                                    acc_queues_vert_offset + (queue_batch_task_i + 0.5f) * WS_TASK_VERTICAL_DISTANCE,
+                                    acc_submit_hor_offset + (static_cast<float>(queue_batch_i) + 0.5f) * WS_BATCH_HORIZONTAL_DISTANCE,
+                                    acc_queues_vert_offset + (static_cast<float>(queue_batch_task_i) + 0.5f) * WS_TASK_VERTICAL_DISTANCE,
                                 };
 
                                 ImGui::PushID(task);
@@ -944,7 +938,7 @@ namespace daxa
                                         8.0f);
 
                                     ImGui::Text("%s", std::string(task->name).c_str());
-                                    ImGui::Text("Attachment Count %i", task->attachments.size());
+                                    ImGui::Text("Attachment Count %zu", task->attachments.size());
                                     ImGui::EndGroup();
                                 }
                                 else
@@ -959,10 +953,10 @@ namespace daxa
                             }
                         }
 
-                        acc_queues_vert_offset += (max_tasks_in_batches + 1) * WS_TASK_VERTICAL_DISTANCE;
+                        acc_queues_vert_offset += static_cast<float>(max_tasks_in_batches + 1) * WS_TASK_VERTICAL_DISTANCE;
                     }
 
-                    acc_submit_hor_offset += ((submit.final_schedule_last_batch - submit.final_schedule_first_batch + 1) + 1) * WS_BATCH_HORIZONTAL_DISTANCE;
+                    acc_submit_hor_offset += static_cast<float>((submit.final_schedule_last_batch - submit.final_schedule_first_batch + 1) + 1) * WS_BATCH_HORIZONTAL_DISTANCE;
                 }
 
                 draw_list->ChannelsMerge();
@@ -1013,7 +1007,7 @@ namespace daxa
             }
             else if (ui_context.hovered_task == task_idx)
             {
-                ui_context.hovered_task = ~0;
+                ui_context.hovered_task = ~0u;
             }
 
             pin_task_attachments_checkbox(ui_context, impl_tg, task_idx);
@@ -1040,12 +1034,12 @@ namespace daxa
                 ImGui::TableNextColumn();
                 ImGui::Text("Submit");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", task.submit_index);
+                ImGui::Text("%u", task.submit_index);
 
                 ImGui::TableNextColumn();
                 ImGui::Text("Scheduled batch index");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", task.final_schedule_batch);
+                ImGui::Text("%u", task.final_schedule_batch);
 
                 ImGui::TableNextColumn();
                 ImGui::Text("Queue");
@@ -1062,6 +1056,7 @@ namespace daxa
 
             u32 const flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
             ImVec4 default_color = ImGui::GetStyle().Colors[ImGuiCol_Text];
+            (void)default_color;
             static std::array const columns = {"Name", "Type", "Access Stage", "Access", "Resource"};
 
             /// ===========================
@@ -1109,6 +1104,7 @@ namespace daxa
                         row_info.resource_index = image_attach_info.translated_view.index;
                         break;
                     }
+                    default: break;
                     }
 
                     ImGui::BeginDisabled(row_info.resource_index == ~0u);
@@ -1230,7 +1226,6 @@ namespace daxa
             /// ======= GENERAL RESOURCE ATTRIBUTES =======
             /// ===========================================
 
-            static constexpr char const * ATTRIBUTE_FORMATTING = "- {:<28.28} ";
             ImGui::SeparatorText(std::format("{} Attributes", to_string(resource.kind).data()).c_str());
 
             auto set_table_cell_name_color = []()
@@ -1247,7 +1242,7 @@ namespace daxa
                 set_table_cell_name_color();
                 ImGui::Text("Dimensions");
                 ImGui::TableNextColumn();
-                ImGui::Text("%iD", info.dimensions);
+                ImGui::Text("%uD", info.dimensions);
 
                 if (info.dimensions == 1)
                 {
@@ -1278,19 +1273,19 @@ namespace daxa
                 set_table_cell_name_color();
                 ImGui::Text("Array Layers");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", info.array_layer_count);
+                ImGui::Text("%u", info.array_layer_count);
 
                 ImGui::TableNextColumn();
                 set_table_cell_name_color();
                 ImGui::Text("Mip Levels");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", info.mip_level_count);
+                ImGui::Text("%u", info.mip_level_count);
 
                 ImGui::TableNextColumn();
                 set_table_cell_name_color();
                 ImGui::Text("Sample Count");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", info.sample_count);
+                ImGui::Text("%u", info.sample_count);
 
                 ImGui::TableNextColumn();
                 ImGui::EndTable();
@@ -1306,13 +1301,13 @@ namespace daxa
                 set_table_cell_name_color();
                 ImGui::Text("Offset");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", resource.allocation_offset);
+                ImGui::Text("%llu", resource.allocation_offset);
 
                 ImGui::TableNextColumn();
                 set_table_cell_name_color();
                 ImGui::Text("Size");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", resource.allocation_size);
+                ImGui::Text("%llu", resource.allocation_size);
 
                 ImGui::TableNextColumn();
                 set_table_cell_name_color();
@@ -1361,7 +1356,6 @@ namespace daxa
                 case TaskResourceKind::BLAS:
                 case TaskResourceKind::TLAS:
                 {
-                    u64 size = {};
                     MemoryFlags memory_flags = {};
                     u64 device_address = {};
                     u64 host_address = {};
@@ -1372,7 +1366,6 @@ namespace daxa
                     {
                         BufferId id = resource.external ? resource.external->id.buffer : resource.id.buffer;
                         BufferInfo info = ui_context.device.buffer_info(id).value_or({});
-                        size = info.size;
                         device_address = ui_context.device.buffer_device_address(id).value_or(0);
                         host_address = std::bit_cast<u64>(ui_context.device.buffer_host_address(id).value_or(0));
                         external_resource_name = info.name;
@@ -1383,7 +1376,6 @@ namespace daxa
                     {
                         BlasId id = resource.external ? resource.external->id.blas : resource.id.blas;
                         BlasInfo info = ui_context.device.blas_info(id).value_or({});
-                        size = info.size;
                         device_address = ui_context.device.blas_device_address(id).value_or(0);
                         external_resource_name = info.name;
                         memory_flags = MemoryFlagBits::NONE;
@@ -1394,13 +1386,13 @@ namespace daxa
                     {
                         TlasId id = resource.external ? resource.external->id.tlas : resource.id.tlas;
                         TlasInfo info = ui_context.device.tlas_info(id).value_or({});
-                        size = info.size;
                         device_address = ui_context.device.tlas_device_address(id).value_or(0);
                         external_resource_name = info.name;
                         memory_flags = MemoryFlagBits::NONE;
                         host_address = 0;
                         break;
                     }
+                    default: break;
                     }
 
                     ImGui::TableNextColumn();
@@ -1567,7 +1559,7 @@ namespace daxa
                             ImGui::PopStyleColor();
                         }
                         ImGui::TableNextColumn();
-                        ImGui::Text("%i", task->final_schedule_batch);
+                        ImGui::Text("%u", task->final_schedule_batch);
                         ImGui::TableNextColumn();
                         ImVec4 color = access_type_to_color(resource.access_timeline[agi].type);
                         colored_banner_text(
@@ -1740,22 +1732,22 @@ namespace daxa
                 ImGui::TableNextColumn();
                 ImGui::Text("Total Tasks");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", impl_tg->tasks.size());
+                ImGui::Text("%zu", impl_tg->tasks.size());
 
                 ImGui::TableNextColumn();
                 ImGui::Text("Total Resources");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", impl_tg->resources.size());
+                ImGui::Text("%zu", impl_tg->resources.size());
 
                 ImGui::TableNextColumn();
                 ImGui::Text("Total Batches");
                 ImGui::TableNextColumn();
-                ImGui::Text("%i", impl_tg->flat_batch_count);
+                ImGui::Text("%u", impl_tg->flat_batch_count);
 
                 ImGui::TableNextColumn();
                 ImGui::Text("Transient Memory");
                 ImGui::TableNextColumn();
-                ImGui::Text("%imb", impl_tg->resource_memory_block.info().requirements.size / (1u << 20u));
+                ImGui::Text("%llumb", impl_tg->resource_memory_block.info().requirements.size / (1u << 20u));
 
                 ImGui::EndTable();
             }
@@ -1850,7 +1842,6 @@ namespace daxa
             for (u32 q = 0; q < submit.queue_indices.size(); ++q)
             {
                 u32 queue_index = submit.queue_indices[q];
-                Queue queue = queue_index_to_queue(queue_index);
                 std::span<TasksBatch> queue_batches = submit.queue_batches[queue_index];
 
                 if (!ui_context.show_async_queues && queue_index != 0)
@@ -1960,7 +1951,7 @@ namespace daxa
         ImVec2 const scale = ImVec2(1.0f, 0.0f);
 
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(batch_border_cell_size * scale.x, scale.y));
-        if (ImGui::BeginTable(std::format("task_timeline_ui_table").c_str(), col_count, table_flags, outer_size))
+        if (ImGui::BeginTable(std::format("task_timeline_ui_table").c_str(), static_cast<int>(col_count), table_flags, outer_size))
         {
             /// =================================
             /// ======= MOUSE DRAG SCROLL =======
@@ -2000,13 +1991,13 @@ namespace daxa
             /// ======= SETUP COLUMNS =======
             /// =============================
 
-            ImGui::TableSetupScrollFreeze(1, static_cast<u32>(2 + ui_context.pinned_resources.size()));
+            ImGui::TableSetupScrollFreeze(1, static_cast<int>(2 + ui_context.pinned_resources.size()));
             ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("a").x * 24);
             std::vector<ImU32> colors = {};
             std::vector<ImU32> text_colors = {};
             colors.push_back(0);
             text_colors.push_back(ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]));
-            for (i32 n = 1; n < static_cast<i32>(col_count); n++)
+            for (u32 n = 1u; n < col_count; ++n)
             {
                 bool batch_border_cell = false;
                 std::string name = {};
@@ -2073,7 +2064,7 @@ namespace daxa
                 last_visible_column = std::max(last_visible_column, static_cast<u32>(column));
                 first_visible_column = std::min(first_visible_column, static_cast<u32>(column));
 
-                ColUiData const & col_ui = col_ui_data[column]; // -1 as the first column is for the name.
+                ColUiData const & col_ui = col_ui_data[static_cast<u32>(column)]; // -1 as the first column is for the name.
                 if (col_ui.is_submit_border)
                 {
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::ColorConvertFloat4ToU32(SUBMIT_COLOR));
@@ -2096,7 +2087,7 @@ namespace daxa
                         name = task_type_to_str(col_ui.task->task_type);
                         color = task_type_to_color(col_ui.task->task_type);
 
-                        bool highlighted = ui_context.extra_highlighted_tasks.contains(std::string(col_ui_data[column].task->name));
+                        bool highlighted = ui_context.extra_highlighted_tasks.contains(std::string(col_ui_data[static_cast<u32>(column)].task->name));
                         if (highlighted)
                         {
                             ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::ColorConvertFloat4ToU32(ImVec4(0.9f, 0.9f, 0.9f, 1.0f)));
@@ -2126,10 +2117,10 @@ namespace daxa
             /// ===================================
 
             ImGuiListClipper clipper = {};
-            clipper.Begin(row_count);
+            clipper.Begin(static_cast<int>(row_count));
             while(clipper.Step())
             {
-                for (u32 row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
+                for (u32 row = static_cast<u32>(clipper.DisplayStart); row < static_cast<u32>(clipper.DisplayEnd); ++row)
                 {
                     RowUiData const & row_ui = row_ui_data[row];
 
@@ -2137,7 +2128,7 @@ namespace daxa
                     /// ======= SETUP BATCH DATA FOR ROW =======
                     /// ========================================
 
-                    u32 resource_index = row_ui_data[row].global_resource_index;
+                    u32 resource_index = row_ui.global_resource_index;
                     ImplTaskResource const & resource = impl_tg->resources[resource_index];
 
                     std::vector<std::array<BatchUiData, DAXA_QUEUE_COUNT>> batch_ui_data = {};
@@ -2191,7 +2182,7 @@ namespace daxa
                     ImGui::SameLine();
                     if (is_pinned)
                     {
-                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::ColorConvertFloat4ToU32(ImVec4(0.9, 0.9, 0.9, 1)));
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::ColorConvertFloat4ToU32(ImVec4(0.9f, 0.9f, 0.9f, 1.0f)));
                         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
                     }
                     ImGui::Text(resource.name.data());
@@ -2199,7 +2190,7 @@ namespace daxa
                     {
                         ImGui::PopStyleColor();
                     }
-                    ImGui::SetItemTooltip(resource.name.data());
+                    ImGui::SetItemTooltip("%s", resource.name.data());
                     resource_popup_context_ui(ui_context, impl_tg, resource_index, true);
 
                     /// =========================================
@@ -2208,7 +2199,7 @@ namespace daxa
 
                     for (u32 column = first_visible_column; column < last_visible_column + 1; ++column)
                     {
-                        if (ImGui::TableSetColumnIndex(column))
+                        if (ImGui::TableSetColumnIndex(static_cast<int>(column)))
                         {
                             ColUiData const & col_ui = col_ui_data[column]; // -1 as the first column is for the name.
                             bool const is_batch_border_cell = col_ui.task == nullptr;
@@ -2283,7 +2274,7 @@ namespace daxa
                                     bool const resource_accessed_by_task = attachment_index != ~0u;
                                     if (resource_accessed_by_task)
                                     {
-                                        ImGui::PushID(column + row * 60000);
+                                        ImGui::PushID(static_cast<int>(column + row * 60000u));
                                         ImGui::Selectable("");
 
                                         /// ===========================
@@ -2348,7 +2339,7 @@ namespace daxa
 
                             u32 const color = ImGui::ColorConvertFloat4ToU32(cell_color);
 
-                            ImGui::PushID(column);
+                            ImGui::PushID(static_cast<int>(column));
                             ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, color);
                             ImGui::PopID();
                         }
@@ -2509,7 +2500,11 @@ namespace daxa
                 auto * readback_struct = ui_context.device.buffer_host_address_as<TaskGraphDebugUiImageReadbackStruct>(state.image.readback_buffer).value();
                 state.image.latest_readback = readback_struct[readback_index];
                 readback_struct[readback_index] = {
+                    .hovered_color = {},
+                    .hovered_value = {},
+                    .pos_max_value = 0,
                     .pos_min_value = ~0u,
+                    .neg_max_value = 0,
                     .neg_min_value = ~0u,
                 };
             }

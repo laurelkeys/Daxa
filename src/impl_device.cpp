@@ -947,17 +947,13 @@ auto daxa_dvc_create_tlas_from_memory_block(daxa_Device self, daxa_MemoryBlockTl
 {
     auto buffer_info = daxa_BufferInfo{
         .size = info->tlas_info.size,
+        .memory_flags = {},
         .name = info->tlas_info.name,
     };
     daxa_BufferId buffer = {};
     daxa_Result result = create_buffer_helper(self, &buffer_info, &buffer, *info->memory_block, info->offset);
     _DAXA_RETURN_IF_ERROR(result, result);
 
-    auto buffer_tlas_info = daxa_BufferTlasInfo{
-        .tlas_info = info->tlas_info,
-        .buffer = buffer,
-        .offset = {},
-    };
     u64 const buffer_offset = 0u; // the offset is used for sub allocating the memory block, the tlas is the whole buffer
     return create_acceleration_structure_helper(
         self,

@@ -571,7 +571,7 @@ namespace daxa
 
     auto Device::buffer_device_address_to_buffer(DeviceAddress address) -> Optional<BufferOffsetPair>
     {
-        daxa_BufferOffsetPair id_offset_pair = {}; 
+        daxa_BufferOffsetPair id_offset_pair = {};
         auto result = daxa_dvc_buffer_device_address_to_buffer(r_cast<daxa_Device>(this->object), std::bit_cast<daxa_DeviceAddress>(address), &id_offset_pair);
         if (result == DAXA_RESULT_SUCCESS)
         {
@@ -1311,8 +1311,9 @@ namespace daxa
 
     void CommandRecorder::wait_events(daxa::Span<EventWaitInfo const> const & infos)
     {
-        daxa_cmd_wait_events(
+        auto result = daxa_cmd_wait_events(
             this->internal, r_cast<daxa_EventSignalInfo const *>(infos.data()), infos.size());
+        check_result(result, "failed to wait events");
     }
 
     DAXA_DECL_COMMAND_LIST_WRAPPER_CHECK_RESULT(CommandRecorder, wait_event, EventWaitInfo)
